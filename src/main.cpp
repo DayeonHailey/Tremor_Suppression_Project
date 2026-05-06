@@ -11,13 +11,16 @@ void setup() {
 
     // 각 모듈의 초기화 함수만 호출 (구현은 각 .cpp 파일에 위치)
     // IMU_Init();
+    while (!Serial); // PC와 시리얼 연결 대기
+
+    initIMU(); // IMU 초기화
     // Filter_Init();
     // Haptic_Init();
 }
 
 void loop() {
     // 1. 센서 데이터 획득 (imu_handler)
-    // float rawZ = Read_IMU_Data();
+    handleIMU();
     
     // 2. 신호 처리 (dsp_filter)
     // float filteredZ = Process_Filter(rawZ);
