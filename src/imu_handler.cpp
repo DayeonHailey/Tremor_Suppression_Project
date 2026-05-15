@@ -14,7 +14,7 @@ void initIMU() {
 
 // 타이밍 제어나 출력 없이, 호출될 때마다 센서값만 딱 읽어옵니다.
 IMU_Data readIMU() {
-    IMU_Data data;
+    IMU_Data data; // x, y, z 데이터를 한 번에 묶어서 전달하는 struct
     data.x = myIMU.readFloatAccelX();
     data.y = myIMU.readFloatAccelY();
     data.z = myIMU.readFloatAccelZ();
