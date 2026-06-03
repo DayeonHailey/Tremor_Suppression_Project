@@ -2,7 +2,7 @@
 #include "config.h" // Sampling Rate 등의 상수가 필요할 경우
 #include <math.h>
 
-// --- Biquad 필터 클래스 (이전에 작성하신 코드 활용) ---
+// --- Biquad 필터 클래스 ---
 class BiquadFilter {
   private:
     float b0, b1, b2, a1, a2;
@@ -30,7 +30,7 @@ class BiquadFilter {
         a1 = (-2.0 * cos(w0)) / a0;
         a2 = (1.0 - alpha) / a0;
     }
-
+//Biquad 필터의 Direct Form II 구조로 구현, z1,z2(지연변수) 는 연산 중간 결과값 저장 --> 다음 사이클에 사용
     float process(float in) {
         float out = b0 * in + z1;
         z1 = b1 * in - a1 * out + z2;
