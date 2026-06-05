@@ -1,4 +1,4 @@
-/*#include <Arduino.h>
+#include <Arduino.h>
 #include "config.h"
 #include "imu_handler.h"
 #include "dsp_filter.h"
@@ -51,26 +51,24 @@ void loop() {
         Haptic_Set_Vibration(tremorMagnitude);
     }
 }   
-*/
 
-#include <Arduino.h>
+//-----------------------
+/*#include <Arduino.h>
 #include <Wire.h>
-#include "imu_handler.h"
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
   delay(1000);
 
-  initIMU(); 
 
   pinMode(D1, OUTPUT);
   digitalWrite(D1, HIGH);   // DRV EN — 스캔 전에 반드시 깨워둠
   delay(10);
 
-  //Wire.begin();
+  Wire.begin();
   Wire.setClock(100000);    // 100kHz 명시
-  //delay(50);
+  delay(50);
 
   Serial.println("Scanning...");
 
@@ -90,3 +88,4 @@ void loop() {
   if (!found) Serial.println("No I2C devices.");
   delay(2000);
 }
+*/

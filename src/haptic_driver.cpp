@@ -80,20 +80,16 @@ void Haptic_Init() {
     writeRegister8(REG_CONTROL3, 0x01);  // LRA_OPEN_LOOP 활성화
     
     // 5. ★ 진폭 제한 (진동 세기) — 살려야 함
-    writeRegister8(REG_ODCLAMP, 0xFF);   // 최대 출력 (테스트용)
+    writeRegister8(REG_ODCLAMP, 0x60);   // 모터 출력 1.5V 로 제한, 0x73은 1.8V
 
     // 5. ★ open-loop 구동 주파수 = 0x20 (170Hz)
     writeRegister8(REG_OLP, CALC_LRA_FREQ(170));  // ≈ 60
     
     // 6. RATED_VOLTAGE (open-loop에선 영향 적지만 무해)
-   //  writeRegister8(REG_RATEDV, CALC_RATED_VOLTAGE(1.8));
+    writeRegister8(REG_RATEDV, CALC_RATED_VOLTAGE(1.8));
 
-    // 3. 저전력 Open-loop 및 구동 파라미터 설정
-   // writeRegister8(REG_CONTROL3, 0x01); // LRA_OPEN_LOOP 활성화
-   // writeRegister8(REG_LRARESON, CALC_LRA_FREQ(170)); // 170Hz 타겟
-   // writeRegister8(REG_RATEDV, CALC_RATED_VOLTAGE(1.8)); // 1.8V 전압 제한
 
-    // 4. 초기 상태: 제동(0) 및 Standby 진입
+    // 초기 상태: 제동(0) 및 Standby 진입
     writeRegister8(REG_MODE, 0x05); // RTP 모드 (0x05)
     writeRegister8(REG_RTPIN, 0x00); // 진동 0
     writeRegister8(REG_MODE, 0x45); // Standby 비트(bit 6) 설정으로 초저전력 모드 진입
@@ -110,7 +106,7 @@ void Haptic_Init() {
 
 
 
-void Haptic_Set_Vibration(float rms_value) {
+/*void Haptic_Set_Vibration(float rms_value) {
     // === 임시 테스트: 무조건 고정 진동 ===
     if (is_standby) {
         writeRegister8(REG_MODE, 0x05);
@@ -119,10 +115,10 @@ void Haptic_Set_Vibration(float rms_value) {
     writeRegister8(REG_RTPIN, 50);  // 고정값 100으로 강제 구동
     return;  // 아래 로직 전부 스킵
 }
-
+*/
 
 // RTP Matching Logic (임시로 주석 처리, 추후 튜닝 후 복구 예정)
-/* void Haptic_Set_Vibration(float rms_value) {
+void Haptic_Set_Vibration(float rms_value) {
     unsigned long current_time = millis();
 
     if (rms_value >= TREMOR_THRESHOLD) {
@@ -141,9 +137,9 @@ void Haptic_Set_Vibration(float rms_value) {
             long rtp_value = map((long)(rms_value * 100), 
                                  (long)(TREMOR_THRESHOLD * 100), 
                                  (long)(MAX_RMS_EXPECTED * 100), 
-                                 13, 30);
+                                 13, 127);
                                  
-            if (rtp_value > 30) rtp_value = 30;
+            if (rtp_value > 127) rtp_value = 127;
             if (rtp_value < 13) rtp_value = 13;
 
             writeRegister8(REG_RTPIN, (uint8_t)rtp_value);
@@ -164,4 +160,3 @@ void Haptic_Set_Vibration(float rms_value) {
         }
     }
 }
-*/ 
