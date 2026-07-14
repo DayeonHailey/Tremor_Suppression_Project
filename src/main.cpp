@@ -8,8 +8,16 @@ unsigned long previous_micros = 0;
 const unsigned long sample_period_us = 10000; // 100Hz = 10,000us, 400Hz = 2,500us
 
 void setup() {
+    // 전원 인가 표시: LED 3회 blink (XIAO nRF52840은 LED가 active-LOW)
+    pinMode(LED_BUILTIN, OUTPUT);
+    for (int i = 0; i < 3; i++) {
+        digitalWrite(LED_BUILTIN, LOW);  delay(150);  // 켜짐
+        digitalWrite(LED_BUILTIN, HIGH); delay(150);  // 꺼짐
+    }
+
     Serial.begin(115200);
-    while (!Serial); // PC와 시리얼 연결 대기
+    unsigned long t0 = millis();
+    while (!Serial && millis() - t0 < 3000);
     delay(2000); 
     
     Serial.println("=== Tremor Suppression System Initialized ===");
@@ -46,6 +54,7 @@ void loop() {
         Serial.print(raw_data.z, 4);
         Serial.print(",");
         Serial.println(tremorMagnitude, 4);
+        
 
         // 4. 햅틱 피드백 제어 (추후 구현)
         Haptic_Set_Vibration(tremorMagnitude);

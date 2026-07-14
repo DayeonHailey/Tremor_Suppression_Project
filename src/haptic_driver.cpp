@@ -16,8 +16,8 @@
 #define REG_OLP   0x20
 
 // --- 튜닝 파라미터 ---
-const float TREMOR_THRESHOLD = 0.1;   
-const float MAX_RMS_EXPECTED = 3.0;   
+const float TREMOR_THRESHOLD = 0.04;   
+const float MAX_RMS_EXPECTED = 0.4;   
 const unsigned long RTP_UPDATE_PERIOD = 100; // 진동 세기 유지/업데이트 주기 (100ms)
 
 // 매크로 함수
@@ -80,7 +80,7 @@ void Haptic_Init() {
     writeRegister8(REG_CONTROL3, 0x01);  // LRA_OPEN_LOOP 활성화
     
     // 5. ★ 진폭 제한 (진동 세기) — 살려야 함
-    writeRegister8(REG_ODCLAMP, 0x60);   // 모터 출력 1.5V 로 제한, 0x73은 1.8V
+    writeRegister8(REG_ODCLAMP, 0x60);   // 14 = 0.43V, 20 = 0.68V, 30 = 1.0V, 60 = 1.5V, 73 = 1.8V
 
     // 5. ★ open-loop 구동 주파수 = 0x20 (170Hz)
     writeRegister8(REG_OLP, CALC_LRA_FREQ(170));  // ≈ 60
@@ -104,29 +104,15 @@ void Haptic_Init() {
     Serial.print("OLP(0x20): 0x");      Serial.println(readRegister8(0x20), HEX);
 }
 
-
-
-/*void Haptic_Set_Vibration(float rms_value) {
-    // === 임시 테스트: 무조건 고정 진동 ===
-    if (is_standby) {
-        writeRegister8(REG_MODE, 0x05);
-        is_standby = false;
-    }
-    writeRegister8(REG_RTPIN, 50);  // 고정값 100으로 강제 구동
-    return;  // 아래 로직 전부 스킵
-}
-*/
-
-// RTP Matching Logic (임시로 주석 처리, 추후 튜닝 후 복구 예정)
+//RTP Matching Logic (임시로 주석 처리, 추후 튜닝 후 복구 예정)
 void Haptic_Set_Vibration(float rms_value) {
     unsigned long current_time = millis();
 
     if (rms_value >= TREMOR_THRESHOLD) {
         // [1] Standby 해제 (모터 깨우기)
-        if (is_standby) {
-            writeRegister8(REG_MODE, 0x05); // RTP 모드로 복귀
-            is_standby = false;
-        }
+        writeRegister8(REG_MODE, 0x05); // RTP 모드로 복귀
+        is_standby = false;
+    
         
         brake_counter = 0; // 브레이크 초기화
 
@@ -137,10 +123,12 @@ void Haptic_Set_Vibration(float rms_value) {
             long rtp_value = map((long)(rms_value * 100), 
                                  (long)(TREMOR_THRESHOLD * 100), 
                                  (long)(MAX_RMS_EXPECTED * 100), 
-                                 13, 127);
+                                 5, 100);
                                  
-            if (rtp_value > 127) rtp_value = 127;
-            if (rtp_value < 13) rtp_value = 13;
+            if (rtp_value > 100) rtp_value = 100;
+            if (rtp_value < 5) rtp_value = 5;
+
+            uint8_t ack = writeRegister8(REG_RTPIN, (uint8_t)rtp_value);
 
             writeRegister8(REG_RTPIN, (uint8_t)rtp_value);
         }
@@ -160,3 +148,67 @@ void Haptic_Set_Vibration(float rms_value) {
         }
     }
 }
+
+
+/*void Haptic_Set_Vibration(float rms_value) {
+    (void)rms_value;  // 인자 미사용 (스캔 모드)
+
+    // --- 내부 상태 ---
+    static uint8_t rtp_value = 0;               // 현재 RTP (0~127)
+    static unsigned long last_step_time = 0;    // 마지막 증가 시각
+    static bool scan_started = false;
+    const unsigned long STEP_PERIOD = 2000;     // 2초마다 1씩 증가
+
+    unsigned long now = millis();
+
+    // 최초 진입 시 Standby 해제 + RTP 모드 진입 + 타이머 초기화
+    if (!scan_started) {
+        writeRegister8(REG_MODE, 0x00); delay(1);  // Standby 해제
+        writeRegister8(REG_MODE, 0x05);            // RTP 모드
+        is_standby = false;
+
+        rtp_value = 0;
+        writeRegister8(REG_RTPIN, rtp_value);
+        last_step_time = now;
+        scan_started = true;
+
+        Serial.println("=== RTP scan start (0 -> 127, +1 / 2s) ===");
+        Serial.print("RTP="); Serial.print(rtp_value);
+        Serial.print("  ODCLAMP(0x17)=0x"); Serial.print(readRegister8(REG_ODCLAMP), HEX);
+        Serial.print("  MODE(0x01)=0x");     Serial.println(readRegister8(REG_MODE), HEX);
+        return;
+    }
+
+    // 2초 경과 시 RTP 1 증가
+    if (now - last_step_time >= STEP_PERIOD) {
+        last_step_time = now;
+
+        if (rtp_value < 127) {
+            rtp_value++;
+        } else {
+            // 127 도달 시: 여기서 멈추려면 아래 유지, 0부터 재시작하려면 rtp_value = 0;
+            Serial.println("=== RTP reached 127 (hold) ===");
+        }
+
+        uint8_t ack = writeRegister8(REG_RTPIN, rtp_value);
+
+        // 실시간 상태 출력
+        Serial.print(" RTP=");     Serial.print(rtp_value);           
+        Serial.print("  t(ms)="); Serial.print(now);
+    }
+}
+    */
+
+/*void Haptic_Set_Vibration(float rms_value) {
+    // === 임시 테스트: 무조건 고정 진동 ===
+    if (is_standby) {
+        writeRegister8(REG_MODE, 0x00); delay(1);
+        writeRegister8(REG_MODE, 0x05);
+        is_standby = false;
+    }
+
+    writeRegister8(REG_RTPIN, 10);  // 고정값 100으로 강제 구동
+    return;  // 아래 로직 전부 스킵
+}
+*/
+
